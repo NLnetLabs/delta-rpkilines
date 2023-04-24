@@ -96,6 +96,7 @@ public class Fetcher {
     }
 
     public void stop() {
+        processor.addToQueue(new NotificationItem("<removed></removed>", System.currentTimeMillis(), "", "", baseUrl));
         this.timer.cancel();
     }
 

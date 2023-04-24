@@ -54,7 +54,10 @@ public class Processor {
                         System.out.println(item.getUri());
                         Document doc = Utils.parseXml(item.getDocument());
                         Element root = doc.getDocumentElement();
-                        if ("snapshot".equals(root.getTagName())) {
+                        if ("removed".equals(root.getTagName())) {
+                            addEvent("removed", item.getTimestamp(), item.getUri(), item.getHash(), item.getPublicationPoint());
+                            removeObjects(item.getPublicationPoint(), item.getTimestamp());
+                        } else if ("snapshot".equals(root.getTagName())) {
                             addEvent("snapshot", item.getTimestamp(), item.getUri(), item.getHash(), item.getPublicationPoint());
                             removeObjects(item.getPublicationPoint(), item.getTimestamp());
 
