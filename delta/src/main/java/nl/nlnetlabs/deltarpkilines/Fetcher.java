@@ -83,12 +83,12 @@ public class Fetcher {
                         }
                     }
                     lastSeenSerial = serial;
-                    System.out.println(url);
+                    System.out.println("Fetch: " + url);
                 } catch (IOException | ParserConfigurationException | UnsupportedOperationException | SAXException | XPathExpressionException e) {
                     StringWriter sw = new StringWriter();
                     PrintWriter pw = new PrintWriter(sw);
                     e.printStackTrace(pw);
-                    System.out.println(url + "\n" + sw.toString());
+                    System.out.println("Fetch: " + url + "\n" + sw.toString());
                 } finally {
                     System.gc();
                 }

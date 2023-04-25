@@ -54,10 +54,9 @@ public class Processor {
                         break;
                     }
                     try {
-                        System.out.println(item.getDocument().substring(0, 9));
-                        System.out.println(item.getUri());
                         Document doc = Utils.parseXml(item.getDocument());
                         Element root = doc.getDocumentElement();
+                        System.out.println("Process " + root.getTagName() + ": " + item.getUri());
                         if ("removed".equals(root.getTagName())) {
                             addEvent("removed", item.getTimestamp(), item.getUri(), item.getHash(), item.getPublicationPoint());
                             removeObjects(item.getPublicationPoint(), item.getTimestamp());
@@ -104,7 +103,6 @@ public class Processor {
                             throw new IOException("No idea what's going on here");
                         }
                         commit();
-                        System.out.println(root.getAttribute("session_id"));
                     } catch (ParserConfigurationException | SAXException | IOException | SQLException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
