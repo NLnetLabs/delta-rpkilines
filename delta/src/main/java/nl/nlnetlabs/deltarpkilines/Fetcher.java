@@ -46,8 +46,8 @@ public class Fetcher {
 
         this.baseUrl = url;
         this.sha1 = DigestUtils.sha1Hex(url);
-        this.client = HttpClients.custom().setUserAgent("Koen's Frequent RRDP Fetcher 0.2.0").build();
-        this.timer = new Timer();
+        this.client = HttpClients.custom().setUserAgent("NLnet Labs Delta RPKIlines 0.3.0").build();
+        this.timer = new Timer("Timer-Fetcher-" + url);
         this.lastSeenSerial = 0;
 
         this.timer.scheduleAtFixedRate(new TimerTask() {
@@ -89,6 +89,8 @@ public class Fetcher {
                     PrintWriter pw = new PrintWriter(sw);
                     e.printStackTrace(pw);
                     System.out.println(url + "\n" + sw.toString());
+                } finally {
+                    System.gc();
                 }
             }
         }, delay, frequency * 1000);
@@ -98,6 +100,13 @@ public class Fetcher {
     public void stop() {
         processor.addToQueue(new NotificationItem("<removed></removed>", System.currentTimeMillis(), "", "", baseUrl));
         this.timer.cancel();
+        this.timer = null;
+        try {
+            this.client.close();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
     private boolean downloadFile(String url, String output) throws FileNotFoundException, IOException {
@@ -122,6 +131,7 @@ public class Fetcher {
             throw new IOException("Entity is null");
         }
         String result = EntityUtils.toString(entity);
+        response.close();
         return result;
     }
 

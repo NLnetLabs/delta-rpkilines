@@ -12,6 +12,8 @@ import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import javax.xml.parsers.ParserConfigurationException;
 
@@ -27,12 +29,14 @@ public class Processor {
     private Queue<NotificationItem> queue = new LinkedBlockingQueue<>();
     private Timer timer;
 
+    // private static final Lock databaseLock = new ReentrantLock();
+
     public void addToQueue(NotificationItem item) {
         queue.offer(item);
     }
 
     public Processor() {
-        this.timer = new Timer();
+        this.timer = new Timer("Timer-Processor");
 
         try {
             this.setupDatabase();
@@ -69,10 +73,7 @@ public class Processor {
                                     String uri = childElement.getAttribute("uri");
                                     String content = childElement.getTextContent();
                                     String hash = DigestUtils.sha256Hex(Base64.getDecoder().decode(content.replaceAll("\\s", "")));
-                                    // if (!objectExists(uri, hash)) {
                                     addObject(content, item.getTimestamp(), hash, uri, item.getPublicationPoint());
-                                    // }
-                                    // TODO Handle case where object was removed in new snapshot better
                                 }
                             }
                         } else if ("delta".equals(root.getTagName())) {
@@ -102,22 +103,26 @@ public class Processor {
                         } else {
                             throw new IOException("No idea what's going on here");
                         }
+                        commit();
                         System.out.println(root.getAttribute("session_id"));
                     } catch (ParserConfigurationException | SAXException | IOException | SQLException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
                     } catch (Exception e) {
                         e.printStackTrace();
+                    } finally {
+                        System.gc();
                     }
                 }           
             }
-        }, 0, 50);
+        }, 0, 5);
     }
 
     public void addStartup(long timestamp) {
         try {
             addEvent("startup", timestamp, null, null, null);
             removeObjects(timestamp);
+            commit();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -134,15 +139,15 @@ public class Processor {
         statement.executeUpdate();
     }
 
-    private boolean objectExists(String uri, String hash) throws SQLException {
-        PreparedStatement statement = connection.prepareStatement("SELECT hash FROM objects WHERE uri = ? ORDER BY visibleOn DESC");
-        statement.setString(1, uri);
-        ResultSet resultSet = statement.executeQuery();
-        if (resultSet.next()) {
-            return hash.equals(resultSet.getString("hash"));
-        }
-        return false;
-    }
+    // private boolean objectExists(String uri, String hash) throws SQLException {
+    //     PreparedStatement statement = connection.prepareStatement("SELECT hash FROM objects WHERE uri = ? ORDER BY visibleOn DESC");
+    //     statement.setString(1, uri);
+    //     ResultSet resultSet = statement.executeQuery();
+    //     if (resultSet.next()) {
+    //         return hash.equals(resultSet.getString("hash"));
+    //     }
+    //     return false;
+    // }
 
     private void removeObject(String uri, String hash, long timestamp) throws SQLException {
         PreparedStatement statement = connection.prepareStatement("UPDATE objects SET disappearedOn = ? WHERE uri = ? AND hash = ? AND disappearedOn IS NULL");
@@ -182,8 +187,13 @@ public class Processor {
         statement.executeUpdate();
     }
 
+    private void commit() throws SQLException {
+        connection.commit();
+    }
+
     private void setupDatabase() throws SQLException {
         connection = DriverManager.getConnection("jdbc:sqlite:rpki.db");
+        connection.setAutoCommit(false);
         Statement statement = connection.createStatement();
         statement.setQueryTimeout(30);
 
@@ -191,6 +201,7 @@ public class Processor {
         statement.executeUpdate("CREATE TABLE IF NOT EXISTS objects (content TEXT, visibleOn INTEGER, disappearedOn INTEGER, hash TEXT, uri TEXT, publicationPoint TEXT)");
         statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_objects_uri ON objects (uri)");
         statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_objects_publicationPoint ON objects (publicationPoint)");
+        statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_objects_visibleOn ON objects (visibleOn)");
         statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_objects_disappearedOn ON objects (disappearedOn)");
 
         // statement.executeUpdate("DROP TABLE IF EXISTS events");

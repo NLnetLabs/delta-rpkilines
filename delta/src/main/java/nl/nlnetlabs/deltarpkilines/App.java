@@ -27,7 +27,7 @@ public class App {
         Processor processor = new Processor();
         processor.addStartup(System.currentTimeMillis());
 
-        Timer timer = new Timer();
+        Timer timer = new Timer("Timer-App");
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
