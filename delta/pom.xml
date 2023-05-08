@@ -5,7 +5,7 @@
 
   <groupId>nl.nlnetlabs.deltarpkilines</groupId>
   <artifactId>delta</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>0.2</version>
 
   <name>delta</name>
   <!-- FIXME change it to the project's website -->

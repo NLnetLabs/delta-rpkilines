@@ -18,7 +18,7 @@ if __name__ == "__main__":
                     epilog='Proudly presented by the people at NLnet Labs')
     parser.add_argument("database", help="Path to the SQlite database")
     parser.add_argument("timestamp", help="String indicating a timestamp, will be parsed by dateutil")
-    parser.add_argument("output", help="Output folder for all the files")
+    parser.add_argument("output", help="Output name for the .tar.gz")
 
     args = parser.parse_args()
 

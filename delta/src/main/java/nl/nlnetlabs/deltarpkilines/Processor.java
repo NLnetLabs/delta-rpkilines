@@ -128,61 +128,57 @@ public class Processor {
 
     private void addObject(String content, long timestamp, String hash, String uri, String publicationPoint) throws SQLException {
         removeObject(uri, timestamp);
-        PreparedStatement statement = connection.prepareStatement("INSERT INTO objects (content, visibleOn, hash, uri, publicationPoint) VALUES (?, ?, ?, ?, ?)");
-        statement.setString(1, content);
-        statement.setLong(2, timestamp);
-        statement.setString(3, hash);
-        statement.setString(4, uri);
-        statement.setString(5, publicationPoint);
-        statement.executeUpdate();
+        try (PreparedStatement statement = connection.prepareStatement("INSERT INTO objects (content, visibleOn, hash, uri, publicationPoint) VALUES (?, ?, ?, ?, ?)")) {
+            statement.setString(1, content);
+            statement.setLong(2, timestamp);
+            statement.setString(3, hash);
+            statement.setString(4, uri);
+            statement.setString(5, publicationPoint);
+            statement.executeUpdate();
+        }
     }
 
-    // private boolean objectExists(String uri, String hash) throws SQLException {
-    //     PreparedStatement statement = connection.prepareStatement("SELECT hash FROM objects WHERE uri = ? ORDER BY visibleOn DESC");
-    //     statement.setString(1, uri);
-    //     ResultSet resultSet = statement.executeQuery();
-    //     if (resultSet.next()) {
-    //         return hash.equals(resultSet.getString("hash"));
-    //     }
-    //     return false;
-    // }
-
     private void removeObject(String uri, String hash, long timestamp) throws SQLException {
-        PreparedStatement statement = connection.prepareStatement("UPDATE objects SET disappearedOn = ? WHERE uri = ? AND hash = ? AND disappearedOn IS NULL");
-        statement.setLong(1, timestamp);
-        statement.setString(2, uri);
-        statement.setString(3, hash);
-        statement.executeUpdate();
+        try (PreparedStatement statement = connection.prepareStatement("UPDATE objects SET disappearedOn = ? WHERE uri = ? AND hash = ? AND disappearedOn IS NULL")) {
+            statement.setLong(1, timestamp);
+            statement.setString(2, uri);
+            statement.setString(3, hash);
+            statement.executeUpdate();
+        }
     }
 
     private void removeObject(String uri, long timestamp) throws SQLException {
-        PreparedStatement statement = connection.prepareStatement("UPDATE objects SET disappearedOn = ? WHERE uri = ? AND disappearedOn IS NULL");
-        statement.setLong(1, timestamp);
-        statement.setString(2, uri);
-        statement.executeUpdate();
+        try (PreparedStatement statement = connection.prepareStatement("UPDATE objects SET disappearedOn = ? WHERE uri = ? AND disappearedOn IS NULL")) {
+            statement.setLong(1, timestamp);
+            statement.setString(2, uri);
+            statement.executeUpdate();
+        }
     }
 
     private void removeObjects(String publicationPoint, long timestamp) throws SQLException {
-        PreparedStatement statement = connection.prepareStatement("UPDATE objects SET disappearedOn = ? WHERE publicationPoint = ? AND disappearedOn IS NULL");
-        statement.setLong(1, timestamp);
-        statement.setString(2, publicationPoint);
-        statement.executeUpdate();
+        try (PreparedStatement statement = connection.prepareStatement("UPDATE objects SET disappearedOn = ? WHERE publicationPoint = ? AND disappearedOn IS NULL")) {
+            statement.setLong(1, timestamp);
+            statement.setString(2, publicationPoint);
+            statement.executeUpdate();
+        }
     }
 
     private void removeObjects(long timestamp) throws SQLException {
-        PreparedStatement statement = connection.prepareStatement("UPDATE objects SET disappearedOn = ? WHERE disappearedOn IS NULL");
-        statement.setLong(1, timestamp);
-        statement.executeUpdate();
+        try (PreparedStatement statement = connection.prepareStatement("UPDATE objects SET disappearedOn = ? WHERE disappearedOn IS NULL")) {
+            statement.setLong(1, timestamp);
+            statement.executeUpdate();
+        }
     }
 
     private void addEvent(String event, long timestamp, String uri, String hash, String publicationPoint) throws SQLException {
-        PreparedStatement statement = connection.prepareStatement("INSERT INTO events (event, timestamp, uri, hash, publicationPoint) VALUES (?, ?, ?, ?, ?)");
-        statement.setString(1, event);
-        statement.setLong(2, timestamp);
-        statement.setString(3, uri);
-        statement.setString(4, hash);
-        statement.setString(5, publicationPoint);
-        statement.executeUpdate();
+        try (PreparedStatement statement = connection.prepareStatement("INSERT INTO events (event, timestamp, uri, hash, publicationPoint) VALUES (?, ?, ?, ?, ?)")) {
+            statement.setString(1, event);
+            statement.setLong(2, timestamp);
+            statement.setString(3, uri);
+            statement.setString(4, hash);
+            statement.setString(5, publicationPoint);
+            statement.executeUpdate();
+        }
     }
 
     private void commit() throws SQLException {
