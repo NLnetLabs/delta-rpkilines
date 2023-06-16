@@ -68,17 +68,18 @@ public class Fetcher {
                     }
                     for (long i = lastSeenSerial + 1; i <= serial; i++) {
                         Element deltaElement = (Element) xpath.evaluate(String.format("/notification/delta[@serial='%s']", i), doc, XPathConstants.NODE);
+                        long currentTimeMillis = System.currentTimeMillis();
                         if (deltaElement != null) {
                             String uri = deltaElement.getAttribute("uri");
                             String hash =  deltaElement.getAttribute("hash");
                             // downloadFile(uri, savePath + sha1 + "-" + System.currentTimeMillis() + "-delta-" + i + ".xml");
-                            processor.addToQueue(new NotificationItem(makeRequest(uri), System.currentTimeMillis(), hash, uri, baseUrl));
+                            processor.addToQueue(new NotificationItem(makeRequest(uri), currentTimeMillis, hash, uri, baseUrl));
                         } else {
                             Element snapshotElement = (Element) xpath.evaluate("/notification/snapshot", doc, XPathConstants.NODE);
                             String uri = snapshotElement.getAttribute("uri");
                             String hash =  snapshotElement.getAttribute("hash");
                             // downloadFile(uri, savePath + sha1 + "-" + System.currentTimeMillis() + "-snapshot.xml");
-                            processor.addToQueue(new NotificationItem(makeRequest(uri), System.currentTimeMillis(), hash, uri, baseUrl));
+                            processor.addToQueue(new NotificationItem(makeRequest(uri), currentTimeMillis, hash, uri, baseUrl));
                             break;
                         }
                     }

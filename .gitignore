@@ -1,5 +1,7 @@
 .vscode
 .idea
 rpki.db
+rpki.db-journal
 output/
 delta/target
+app.properties

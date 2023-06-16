@@ -67,8 +67,10 @@ public class Processor {
                                     Element childElement = (Element)child;
                                     String uri = childElement.getAttribute("uri");
                                     String content = childElement.getTextContent();
-                                    String hash = DigestUtils.sha256Hex(Base64.getDecoder().decode(content.replaceAll("\\s", "")));
-                                    addObject(content, item.getTimestamp(), hash, uri, item.getPublicationPoint());
+                                    byte[] rawContent = Base64.getDecoder().decode(content.replaceAll("\\s", ""));
+                                    String hash = DigestUtils.sha256Hex(rawContent);
+                                    Utils.uploadFile(hash, rawContent);
+                                    addObject(hash, item.getTimestamp(), hash, uri, item.getPublicationPoint());
                                 }
                             }
                         } else if ("delta".equals(root.getTagName())) {
@@ -91,8 +93,10 @@ public class Processor {
                                     Element childElement = (Element)child;
                                     String uri = childElement.getAttribute("uri");
                                     String content = childElement.getTextContent();
-                                    String hash = DigestUtils.sha256Hex(Base64.getDecoder().decode(content.replaceAll("\\s", "")));
-                                    addObject(content, item.getTimestamp(), hash, uri, item.getPublicationPoint());
+                                    byte[] rawContent = Base64.getDecoder().decode(content.replaceAll("\\s", ""));
+                                    String hash = DigestUtils.sha256Hex(rawContent);
+                                    Utils.uploadFile(hash, rawContent);
+                                    addObject(hash, item.getTimestamp(), hash, uri, item.getPublicationPoint());
                                 }
                             }
                         } else {

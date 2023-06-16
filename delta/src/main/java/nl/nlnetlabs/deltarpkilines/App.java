@@ -1,5 +1,6 @@
 package nl.nlnetlabs.deltarpkilines;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Set;
@@ -17,7 +18,9 @@ import org.json.JSONObject;
 public class App {
     private HashMap<String, Fetcher> urls = new HashMap<>();
 
-    public App() {
+    public App() throws FileNotFoundException, IOException {
+        Utils.initSettings();
+
         Processor processor = new Processor();
         processor.addStartup(System.currentTimeMillis());
 
@@ -74,7 +77,7 @@ public class App {
         return rrdp.keySet();
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException, IOException {
         App app = new App();
     }
 }
