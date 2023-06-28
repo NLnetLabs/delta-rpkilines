@@ -53,6 +53,7 @@ public class Utils {
                 .standard()
                 .withEndpointConfiguration(endpoint)
                 .withCredentials(new AWSStaticCredentialsProvider(credentials))
+                .withPathStyleAccessEnabled(true)
                 .build();
             s3bucket = properties.getProperty("bucket");
         }
