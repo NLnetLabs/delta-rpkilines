@@ -7,6 +7,10 @@ import sqlite3
 import tarfile
 
 
+# This script currently does not work, as it does not implement the blob storage back-end
+# Please use the version before that if you want to use this script
+# TODO: Update script to work with blob storage
+
 if __name__ == "__main__":
     database = ""
     timestamp = 0
