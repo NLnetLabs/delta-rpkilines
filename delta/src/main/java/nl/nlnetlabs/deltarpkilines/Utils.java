@@ -45,6 +45,12 @@ public class Utils {
         properties.load(new FileInputStream("app.properties"));
     }
 
+    public static String getJdbcString() {
+        return "jdbc:postgresql://" + properties.getProperty("dbHost") + "/" + 
+            properties.getProperty("dbName") + "?user=" + properties.getProperty("dbUser") + 
+            "&password=" + properties.getProperty("dbPass");
+    }
+
     public static void initS3() {
         if (s3 == null) {
             EndpointConfiguration endpoint = new AwsClientBuilder.EndpointConfiguration(properties.getProperty("endpoint"), properties.getProperty("region"));

@@ -85,7 +85,7 @@ public class Fetcher {
                     }
                     lastSeenSerial = serial;
                     System.out.println("Fetch: " + url);
-                } catch (IOException | ParserConfigurationException | UnsupportedOperationException | SAXException | XPathExpressionException e) {
+                } catch (IOException | ParserConfigurationException | UnsupportedOperationException | SAXException | XPathExpressionException | OutOfMemoryError e) {
                     StringWriter sw = new StringWriter();
                     PrintWriter pw = new PrintWriter(sw);
                     e.printStackTrace(pw);
@@ -131,7 +131,7 @@ public class Fetcher {
         if (entity == null) {
             throw new IOException("Entity is null");
         }
-        String result = EntityUtils.toString(entity);
+        String result = new String(entity.getContent().readAllBytes(), StandardCharsets.UTF_8);
         response.close();
         return result;
     }

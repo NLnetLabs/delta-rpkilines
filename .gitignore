@@ -5,3 +5,4 @@ rpki.db-journal
 output/
 delta/target
 app.properties
+web/config.php

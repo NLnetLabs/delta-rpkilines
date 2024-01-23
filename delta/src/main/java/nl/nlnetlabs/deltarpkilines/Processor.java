@@ -1,11 +1,7 @@
 package nl.nlnetlabs.deltarpkilines;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.Base64;
 import java.util.Queue;
 import java.util.Timer;
@@ -25,8 +21,6 @@ public class Processor {
     private Queue<NotificationItem> queue = new LinkedBlockingQueue<>();
     private Timer timer;
 
-    // private static final Lock databaseLock = new ReentrantLock();
-
     public void addToQueue(NotificationItem item) {
         queue.offer(item);
     }
@@ -39,6 +33,9 @@ public class Processor {
         } catch (SQLException e1) {
             // TODO Auto-generated catch block
             e1.printStackTrace();
+            System.exit(1);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
         }
 
         this.timer.scheduleAtFixedRate(new TimerTask() {
@@ -69,8 +66,8 @@ public class Processor {
                                     String content = childElement.getTextContent();
                                     byte[] rawContent = Base64.getDecoder().decode(content.replaceAll("\\s", ""));
                                     String hash = DigestUtils.sha256Hex(rawContent);
-                                    Utils.uploadFile(hash, rawContent);
-                                    addObject(hash, item.getTimestamp(), hash, uri, item.getPublicationPoint());
+                                     Utils.uploadFile(hash, rawContent);
+                                    addObject(content, item.getTimestamp(), hash, uri, item.getPublicationPoint());
                                 }
                             }
                         } else if ("delta".equals(root.getTagName())) {
@@ -95,8 +92,8 @@ public class Processor {
                                     String content = childElement.getTextContent();
                                     byte[] rawContent = Base64.getDecoder().decode(content.replaceAll("\\s", ""));
                                     String hash = DigestUtils.sha256Hex(rawContent);
-                                    Utils.uploadFile(hash, rawContent);
-                                    addObject(hash, item.getTimestamp(), hash, uri, item.getPublicationPoint());
+                                     Utils.uploadFile(hash, rawContent);
+                                    addObject(content, item.getTimestamp(), hash, uri, item.getPublicationPoint());
                                 }
                             }
                         } else {
@@ -185,20 +182,23 @@ public class Processor {
         connection.commit();
     }
 
-    private void setupDatabase() throws SQLException {
-        connection = DriverManager.getConnection("jdbc:sqlite:rpki.db");
+    private void setupDatabase() throws SQLException, ClassNotFoundException {
+        Class.forName("org.postgresql.Driver");
+        connection = DriverManager.getConnection(Utils.getJdbcString());
         connection.setAutoCommit(false);
         Statement statement = connection.createStatement();
         statement.setQueryTimeout(30);
 
         // statement.executeUpdate("DROP TABLE IF EXISTS objects");
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS objects (content TEXT, visibleOn INTEGER, disappearedOn INTEGER, hash TEXT, uri TEXT, publicationPoint TEXT)");
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS objects (content TEXT, visibleOn NUMERIC, disappearedOn NUMERIC, hash TEXT, uri TEXT, publicationPoint TEXT)");
         statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_objects_uri ON objects (uri)");
         statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_objects_publicationPoint ON objects (publicationPoint)");
         statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_objects_visibleOn ON objects (visibleOn)");
         statement.executeUpdate("CREATE INDEX IF NOT EXISTS idx_objects_disappearedOn ON objects (disappearedOn)");
 
         // statement.executeUpdate("DROP TABLE IF EXISTS events");
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS events (event TEXT, timestamp INTEGER, uri TEXT, hash TEXT, publicationPoint TEXT)");
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS events (event TEXT, timestamp NUMERIC, uri TEXT, hash TEXT, publicationPoint TEXT)");
+
+        commit();
     }
 }
