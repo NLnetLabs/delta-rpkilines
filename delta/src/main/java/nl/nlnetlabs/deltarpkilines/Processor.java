@@ -66,7 +66,7 @@ public class Processor {
                                     String content = childElement.getTextContent();
                                     byte[] rawContent = Base64.getDecoder().decode(content.replaceAll("\\s", ""));
                                     String hash = DigestUtils.sha256Hex(rawContent);
-                                     Utils.uploadFile(hash, rawContent);
+                                    Utils.uploadFile(hash, rawContent);
                                     addObject(content, item.getTimestamp(), hash, uri, item.getPublicationPoint());
                                 }
                             }
@@ -92,7 +92,7 @@ public class Processor {
                                     String content = childElement.getTextContent();
                                     byte[] rawContent = Base64.getDecoder().decode(content.replaceAll("\\s", ""));
                                     String hash = DigestUtils.sha256Hex(rawContent);
-                                     Utils.uploadFile(hash, rawContent);
+                                    Utils.uploadFile(hash, rawContent);
                                     addObject(content, item.getTimestamp(), hash, uri, item.getPublicationPoint());
                                 }
                             }
