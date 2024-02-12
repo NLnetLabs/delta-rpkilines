@@ -13,20 +13,23 @@ if($d && $d->format($format) == $timestamp && $d < new DateTime()) {
     $pdo = new PDO($dsn, DB_USER, DB_PASS, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
-    $timestampoutput = $d->format("U") . "000";
+    $timestampoutput = $d->format("Uv");
+
+    error_log("Archive requested for timestamp $timestampoutput");
 
     $stmt = $pdo->prepare("SELECT * FROM objects WHERE visibleOn <= :t AND (disappearedOn >= :t OR disappearedOn IS NULL)");
     $stmt->execute(["t" => $timestampoutput]);
 
-    $path = "/var/www/html/output/rpki-snapshot-" . uniqid() . ".zip";
+    $path = "output/rpki-snapshot-" . uniqid() . ".zip";
     register_shutdown_function('unlink', $path);
 
     $a = new ZipArchive();
     $a->open($path, ZipArchive::CREATE);
     while($data = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        error_log("Adding to archive $path: " . $data['uri']);
         $filepath = str_replace("rsync://", "", $data["uri"]);
         $a->addFromString($filepath, base64_decode($data["content"]));
-        // $a->setMtimeName($filepath, (int)substr($data["visibleOn"], 0, -3));
+        $a->setMtimeName($filepath, (int)substr($data["visibleon"], 0, -3));
     }
     $a->close();
 
@@ -36,7 +39,6 @@ if($d && $d->format($format) == $timestamp && $d < new DateTime()) {
     header("Content-Disposition: attachment; filename=\"rpki.zip\"");
     readfile($path);
     unset($a);
-    unlink($path);
 } else {
     echo "Invalid date";
 }
