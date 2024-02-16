@@ -10,6 +10,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.dbcp2.BasicDataSource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -17,7 +18,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 public class Processor {
-    private Connection connection;
+    private BasicDataSource dataSource;
     private Queue<NotificationItem> queue = new LinkedBlockingQueue<>();
     private Timer timer;
 
@@ -47,15 +48,17 @@ public class Processor {
                         break;
                     }
                     try {
+                        Connection connection = getConnection();
+
                         Document doc = Utils.parseXml(item.getDocument());
                         Element root = doc.getDocumentElement();
                         System.out.println("Process " + root.getTagName() + ": " + item.getUri());
                         if ("removed".equals(root.getTagName())) {
-                            addEvent("removed", item.getTimestamp(), item.getUri(), item.getHash(), item.getPublicationPoint());
-                            removeObjects(item.getPublicationPoint(), item.getTimestamp());
+                            addEvent(connection, "removed", item.getTimestamp(), item.getUri(), item.getHash(), item.getPublicationPoint());
+                            removeObjects(connection, item.getPublicationPoint(), item.getTimestamp());
                         } else if ("snapshot".equals(root.getTagName())) {
-                            addEvent("snapshot", item.getTimestamp(), item.getUri(), item.getHash(), item.getPublicationPoint());
-                            removeObjects(item.getPublicationPoint(), item.getTimestamp());
+                            addEvent(connection, "snapshot", item.getTimestamp(), item.getUri(), item.getHash(), item.getPublicationPoint());
+                            removeObjects(connection, item.getPublicationPoint(), item.getTimestamp());
 
                             NodeList publishes = root.getElementsByTagName("publish");
                             for (int i = 0; i < publishes.getLength(); i++) {
@@ -67,11 +70,11 @@ public class Processor {
                                     byte[] rawContent = Base64.getDecoder().decode(content.replaceAll("\\s", ""));
                                     String hash = DigestUtils.sha256Hex(rawContent);
                                     Utils.uploadFile(hash, rawContent);
-                                    addObject(content, item.getTimestamp(), hash, uri, item.getPublicationPoint());
+                                    addObject(connection, content, item.getTimestamp(), hash, uri, item.getPublicationPoint());
                                 }
                             }
                         } else if ("delta".equals(root.getTagName())) {
-                            addEvent("delta", item.getTimestamp(), item.getUri(), item.getHash(), item.getPublicationPoint());
+                            addEvent(connection, "delta", item.getTimestamp(), item.getUri(), item.getHash(), item.getPublicationPoint());
                             NodeList withdraws = root.getElementsByTagName("withdraw");
                             for (int i = 0; i < withdraws.getLength(); i++) {
                                 Node child = withdraws.item(i);
@@ -79,7 +82,7 @@ public class Processor {
                                     Element childElement = (Element)child;
                                     String uri = childElement.getAttribute("uri");
                                     String hash = childElement.getAttribute("hash");
-                                    removeObject(uri, hash, item.getTimestamp());
+                                    removeObject(connection, uri, hash, item.getTimestamp());
                                 }
                             }
 
@@ -93,13 +96,13 @@ public class Processor {
                                     byte[] rawContent = Base64.getDecoder().decode(content.replaceAll("\\s", ""));
                                     String hash = DigestUtils.sha256Hex(rawContent);
                                     Utils.uploadFile(hash, rawContent);
-                                    addObject(content, item.getTimestamp(), hash, uri, item.getPublicationPoint());
+                                    addObject(connection, content, item.getTimestamp(), hash, uri, item.getPublicationPoint());
                                 }
                             }
                         } else {
                             throw new IOException("No idea what's going on here");
                         }
-                        commit();
+                        commit(connection);
                     } catch (ParserConfigurationException | SAXException | IOException | SQLException e) {
                         // TODO Auto-generated catch block
                         e.printStackTrace();
@@ -115,16 +118,17 @@ public class Processor {
 
     public void addStartup(long timestamp) {
         try {
-            addEvent("startup", timestamp, null, null, null);
-            removeObjects(timestamp);
-            commit();
+            Connection connection = getConnection();
+            addEvent(connection, "startup", timestamp, null, null, null);
+            removeObjects(connection, timestamp);
+            commit(connection);
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    private void addObject(String content, long timestamp, String hash, String uri, String publicationPoint) throws SQLException {
-        removeObject(uri, timestamp);
+    private void addObject(Connection connection, String content, long timestamp, String hash, String uri, String publicationPoint) throws SQLException {
+        removeObject(connection, uri, timestamp);
         try (PreparedStatement statement = connection.prepareStatement("INSERT INTO objects (content, visibleOn, hash, uri, publicationPoint) VALUES (?, ?, ?, ?, ?)")) {
             statement.setString(1, content);
             statement.setLong(2, timestamp);
@@ -135,7 +139,7 @@ public class Processor {
         }
     }
 
-    private void removeObject(String uri, String hash, long timestamp) throws SQLException {
+    private void removeObject(Connection connection, String uri, String hash, long timestamp) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("UPDATE objects SET disappearedOn = ? WHERE uri = ? AND hash = ? AND disappearedOn IS NULL")) {
             statement.setLong(1, timestamp);
             statement.setString(2, uri);
@@ -144,7 +148,7 @@ public class Processor {
         }
     }
 
-    private void removeObject(String uri, long timestamp) throws SQLException {
+    private void removeObject(Connection connection, String uri, long timestamp) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("UPDATE objects SET disappearedOn = ? WHERE uri = ? AND disappearedOn IS NULL")) {
             statement.setLong(1, timestamp);
             statement.setString(2, uri);
@@ -152,7 +156,7 @@ public class Processor {
         }
     }
 
-    private void removeObjects(String publicationPoint, long timestamp) throws SQLException {
+    private void removeObjects(Connection connection, String publicationPoint, long timestamp) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("UPDATE objects SET disappearedOn = ? WHERE publicationPoint = ? AND disappearedOn IS NULL")) {
             statement.setLong(1, timestamp);
             statement.setString(2, publicationPoint);
@@ -160,14 +164,14 @@ public class Processor {
         }
     }
 
-    private void removeObjects(long timestamp) throws SQLException {
+    private void removeObjects(Connection connection, long timestamp) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("UPDATE objects SET disappearedOn = ? WHERE disappearedOn IS NULL")) {
             statement.setLong(1, timestamp);
             statement.executeUpdate();
         }
     }
 
-    private void addEvent(String event, long timestamp, String uri, String hash, String publicationPoint) throws SQLException {
+    private void addEvent(Connection connection, String event, long timestamp, String uri, String hash, String publicationPoint) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("INSERT INTO events (event, timestamp, uri, hash, publicationPoint) VALUES (?, ?, ?, ?, ?)")) {
             statement.setString(1, event);
             statement.setLong(2, timestamp);
@@ -178,14 +182,25 @@ public class Processor {
         }
     }
 
-    private void commit() throws SQLException {
+    private void commit(Connection connection) throws SQLException {
         connection.commit();
+    }
+
+    private Connection getConnection() throws SQLException {
+        return dataSource.getConnection();
     }
 
     private void setupDatabase() throws SQLException, ClassNotFoundException {
         Class.forName("org.postgresql.Driver");
-        connection = DriverManager.getConnection(Utils.getJdbcString());
-        connection.setAutoCommit(false);
+
+        dataSource = new BasicDataSource();
+        dataSource.setUrl(Utils.getJdbcString());
+        dataSource.setDefaultAutoCommit(false);
+
+//        connection = DriverManager.getConnection(Utils.getJdbcString());
+//        connection.setAutoCommit(false);
+
+        Connection connection = dataSource.getConnection();
         Statement statement = connection.createStatement();
         statement.setQueryTimeout(30);
 
@@ -199,6 +214,6 @@ public class Processor {
         // statement.executeUpdate("DROP TABLE IF EXISTS events");
         statement.executeUpdate("CREATE TABLE IF NOT EXISTS events (event TEXT, timestamp NUMERIC, uri TEXT, hash TEXT, publicationPoint TEXT)");
 
-        commit();
+        commit(connection);
     }
 }

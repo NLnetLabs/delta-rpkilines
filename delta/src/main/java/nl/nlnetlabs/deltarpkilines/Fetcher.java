@@ -46,7 +46,7 @@ public class Fetcher {
 
         this.baseUrl = url;
         this.sha1 = DigestUtils.sha1Hex(url);
-        this.client = HttpClients.custom().setUserAgent("NLnet Labs Delta RPKIlines 0.3.0").build();
+        this.client = HttpClients.custom().setUserAgent("NLnet Labs Delta RPKIlines").build();
         this.timer = new Timer("Timer-Fetcher-" + url);
         this.lastSeenSerial = 0;
 
