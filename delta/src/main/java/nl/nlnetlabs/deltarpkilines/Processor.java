@@ -184,6 +184,7 @@ public class Processor {
 
     private void commit(Connection connection) throws SQLException {
         connection.commit();
+        connection.close();
     }
 
     private Connection getConnection() throws SQLException {
@@ -196,9 +197,6 @@ public class Processor {
         dataSource = new BasicDataSource();
         dataSource.setUrl(Utils.getJdbcString());
         dataSource.setDefaultAutoCommit(false);
-
-//        connection = DriverManager.getConnection(Utils.getJdbcString());
-//        connection.setAutoCommit(false);
 
         Connection connection = dataSource.getConnection();
         Statement statement = connection.createStatement();
