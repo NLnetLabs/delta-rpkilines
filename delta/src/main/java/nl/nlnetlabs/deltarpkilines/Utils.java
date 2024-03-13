@@ -51,6 +51,10 @@ public class Utils {
             "&password=" + properties.getProperty("dbPass");
     }
 
+    public static String getRoutinatorUrl() {
+        return properties.getProperty("routinatorUrl");
+    }
+
     public static void initS3() {
         if (s3 == null) {
             EndpointConfiguration endpoint = new AwsClientBuilder.EndpointConfiguration(properties.getProperty("endpoint"), properties.getProperty("region"));

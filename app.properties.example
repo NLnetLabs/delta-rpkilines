@@ -1,7 +1,9 @@
+jdbc=jdbc:postgresql://localhost/delta?user=delta&password=&ssl=true
 dbHost=localhost
 dbName=delta
 dbUser=delta
 dbPass=
+routinatorUrl=https://rpki-validator.ripe.net/api/v1/status
 endpoint=s3.us-west-001.backblazeb2.com
 region=us-west-001
 accessKey=

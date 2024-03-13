@@ -32,7 +32,7 @@ public class App {
                     Set<String> rrdpUrls = fetchRrdpUrls();
 
                     int frequency = 120; // Frequency in seconds
-                    int delay = Math.round((frequency * 1000) / rrdpUrls.size()); // Spread out equally over frequency
+                    int delay = (frequency * 1000) / rrdpUrls.size(); // Spread out equally over frequency
 
                     int i = 0;
                     for (String url : rrdpUrls) {
@@ -59,7 +59,7 @@ public class App {
     }
 
     private Set<String> fetchRrdpUrls() throws IOException {
-        String baseUrl = "https://rpki-validator.ripe.net/api/v1/status";
+        String baseUrl = Utils.getRoutinatorUrl();
 
         CloseableHttpClient httpClient = HttpClients.createDefault();
         HttpGet request = new HttpGet(baseUrl);
